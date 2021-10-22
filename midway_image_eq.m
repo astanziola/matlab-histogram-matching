@@ -18,10 +18,6 @@ function [U, H_midway, H, H_inv] = midway_image_eq(V)
 % Author:
 %   Antonio Stanziola; Biomedical Ultrasound Group, UCL
 
-% Warning:
-%   This implementation assumes that the cumulative
-%   histograms aree never zero at any bin
-
 nbins = 256;
 
 % Compute the histogram of each image and store it
