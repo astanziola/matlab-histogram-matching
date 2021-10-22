@@ -7,8 +7,8 @@ Implementation of histogram matching and specification algorithms.
 
 #### Example
 ```matlab
-A = double(imread("cell.tif"));
-B = round(sin(0.5*pi*double(A)/255)*300);
+A = double(imread("cameraman.tif"));
+B = round(sin(0.5*pi*double(A)/255)*200 + 55);
 B(B>255) = 255;
 V = {A, B};
 

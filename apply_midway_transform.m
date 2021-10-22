@@ -17,12 +17,12 @@ function outimg = apply_midway_transform(img, transform)
     H = cumsum(H);
 
     % Loop trough each pixel
-    outimg = zeros(size(img));
-    for i = 1:size(img, 1)
-        for j = 1:size(img, 2)
-            Hu = round(255*H(round(img(i, j))+1))+1;
-            outimg(i, j) = round(transform(Hu));
-        end
+    intensities = unique(img(:));
+    outimg = img*0;
+    for i = 1:length(intensities)
+        I = intensities(i);
+        Hu = round(255*H(I+1))+1;
+        outimg(img == I) = round(transform(Hu));
     end
 
 end
