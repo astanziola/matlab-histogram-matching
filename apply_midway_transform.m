@@ -10,7 +10,7 @@ function outimg = apply_midway_transform(img, transform)
 %
 
     % get the histogram of the input image
-    numpix = size(img, 1) * size(img, 2);
+    numpix = numel(img);
     nbins = size(transform,2);
     edges = linspace(0, 256, nbins + 1) - 0.5;
     H = histcounts(img, edges) ./ numpix;
