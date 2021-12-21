@@ -1,4 +1,4 @@
-function [U, H_midway, H, H_inv] = midway_image_eq(V)
+function [U, H_midway, H, H_inv, min_max] = midway_image_eq(V, min_max, save_images)
 % Implementation of the Midway Equalization algorithm
 % as described in Algorithm 1 of the paper:
 %   Thierry Guillemot, and Julie Delon, 
@@ -8,6 +8,9 @@ function [U, H_midway, H, H_inv] = midway_image_eq(V)
 %
 % Input:
 %   V: collection of input images as a cell array
+%   masks: cell array containing binary masks that defines the
+%          pixels on which to calculate histograms. If empty,
+%          uses all pixels
 %
 % Output:
 %   U: collection of equalized images as a cell array
@@ -16,17 +19,34 @@ function [U, H_midway, H, H_inv] = midway_image_eq(V)
 %   H_inv: inverse of H
 %
 % Author:
-%   Antonio Stanziola; Biomedical Ultrasound Group, UCL
+%   Antonio Stanziola; Biomedical Ultrasound Group, UCL - a.stanziola@ucl.ac.uk
 
-nbins = 256;
+nbins = 512;
+
+% Making range masks
+masks = cell(size(V));
+for i = 1:length(V)
+    m = ones(size(V{i}));
+    m(V{i} < min_max(1)) = 0;
+    m(V{i} > min_max(2)) = 0;
+    masks{i} = logical(m);
+end
+
+if nargin < 3
+    save_images = true;
+end
 
 % Compute the histogram of each image and store it
 disp("Computing histograms")
 h = cell(1, length(V));
-edges = linspace(0, 256, nbins + 1) - 0.5;
+edges = linspace(min_max(1), min_max(2)+1, nbins + 1) - 0.5;
 for i = 1:length(V)
-    numpix = numel(V{i});
-    h{i} = histcounts(V{i}, edges);
+    volume = V{i};
+    pixels = volume(masks{i});
+    pixels = int32(pixels);
+
+    numpix = numel(pixels);
+    h{i} = histcounts(pixels, edges);
     h{i} = h{i}/numpix;
 end
 
@@ -57,7 +77,46 @@ H_midway = H_midway/length(V);
 U = cell(1, length(V));
 for i = 1:length(V)
     disp(['Equalizing image ' num2str(i)])
-    U{i} = apply_midway_transform(V{i}, H_midway);
+    vol = V{i};
+    U{i} = apply_midway_transform(V{i}, H_midway, min_max);
+end
+
+if save_images
+    for n = 1:length(V)
+        disp(['Saving image ' num2str(n) ' of ' num2str(length(V))]);
+        figure;
+        set(gcf,'Position',[0 0 300 1000])
+        
+        subplot(2,2,1);
+        vol = U{n};
+        imagesc(squeeze(vol(90,:,:)))
+        caxis([min_max(1),min_max(2)/2])
+        colormap gray
+        title('equalized') 
+
+        subplot(2,2,3);
+        histogram(vol)
+        set(gca, 'YScale', 'log')
+        title('matched hist')
+
+        subplot(2,2,2);
+        vol = V{n};
+        imagesc(squeeze(vol(90,:,:)))
+        caxis([min_max(1),min_max(2)/2])
+        colormap gray
+        title('original')
+        
+        subplot(2,2,4);
+        histogram(vol)
+        set(gca, 'YScale', 'log')
+        title('original hist')
+        
+        scaleFig(2, 3);
+
+        drawnow
+        saveas(gcf,['./hist_eq/' num2str(n) '.png'])
+        close all
+    end
 end
 
 end

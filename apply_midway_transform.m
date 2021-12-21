@@ -1,4 +1,4 @@
-function outimg = apply_midway_transform(img, transform)
+function outimg = apply_midway_transform(img, transform, min_max)
 % Apply a midway transform to an image.
 %
 % Inputs:
@@ -10,10 +10,19 @@ function outimg = apply_midway_transform(img, transform)
 %
 
     % get the histogram of the input image
-    numpix = numel(img);
+    minimum = min_max(1);
+    maximum = min_max(2);
+    mask = logical(ones(size(img)));
+    mask(img < minimum) = false;
+    mask(img > maximum) = false;
+    masked_img = img(mask);
+
+    pixels_in_mask = int32(masked_img);
+    img = int32(img);
+    numpix = numel(pixels_in_mask);
     nbins = size(transform,2);
-    edges = linspace(0, 256, nbins + 1) - 0.5;
-    H = histcounts(img, edges) ./ numpix;
+    edges = linspace(minimum, maximum, nbins + 1) - 0.5;
+    H = histcounts(pixels_in_mask, edges) ./ numpix;
     H = cumsum(H);
 
     % Loop trough each pixel
@@ -21,8 +30,13 @@ function outimg = apply_midway_transform(img, transform)
     outimg = img*0;
     for i = 1:length(intensities)
         I = intensities(i);
-        Hu = round(255*H(I+1))+1;
-        outimg(img == I) = round(transform(Hu));
+        if I < min_max(1) || I > min_max(2)
+            outimg(img == I) = I;
+        else
+            index = I - minimum + 1;
+            Hu = int32((nbins-1)*H(index))+1;
+            outimg(img == I) = round(transform(Hu)) + minimum;
+        end
     end
 
 end
