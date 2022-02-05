@@ -20,8 +20,18 @@ function [U, H_midway, H, H_inv, min_max] = midway_image_eq(V, min_max, save_ima
 %
 % Author:
 %   Antonio Stanziola; Biomedical Ultrasound Group, UCL - a.stanziola@ucl.ac.uk
-
-nbins = 512;
+maxval = 0;
+for i = 1:length(V)
+  v = V{i};
+  max_this = ceil(max(reshape(v, 1, [])));
+  if max_this > maxval
+    maxval = max_this;
+  end
+  disp([i, maxval])
+end
+min_max(2) = maxval;
+nbins = min_max(2)+1-min_max(1);
+disp([min_max(1), min_max(2), nbins]);
 
 % Making range masks
 masks = cell(size(V));
@@ -79,35 +89,36 @@ for i = 1:length(V)
     disp(['Equalizing image ' num2str(i)])
     vol = V{i};
     U{i} = apply_midway_transform(V{i}, H_midway, min_max);
-end
 
-if save_images
-    for n = 1:length(V)
+    % Save images
+    if save_images
+        n = i;
         disp(['Saving image ' num2str(n) ' of ' num2str(length(V))]);
         figure;
         set(gcf,'Position',[0 0 300 1000])
         
         subplot(2,2,1);
-        vol = U{n};
-        imagesc(squeeze(vol(90,:,:)))
-        caxis([min_max(1),min_max(2)/2])
+        vol_ = U{n};
+        maxval = max(vol_(:));
+        imagesc(squeeze(vol_(90,:,:)))
+        caxis([min_max(1),maxval])
         colormap gray
         title('equalized') 
 
         subplot(2,2,3);
-        histogram(vol)
+        histogram(vol_)
         set(gca, 'YScale', 'log')
         title('matched hist')
 
         subplot(2,2,2);
-        vol = V{n};
-        imagesc(squeeze(vol(90,:,:)))
-        caxis([min_max(1),min_max(2)/2])
+        vol_ = V{n};
+        imagesc(squeeze(vol_(90,:,:)))
+        caxis([min_max(1),maxval])
         colormap gray
         title('original')
         
         subplot(2,2,4);
-        histogram(vol)
+        histogram(vol_)
         set(gca, 'YScale', 'log')
         title('original hist')
         
@@ -118,5 +129,6 @@ if save_images
         close all
     end
 end
+
 
 end
